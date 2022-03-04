@@ -1,0 +1,27 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# STAT2170/6180 Assignment, 2021 S1
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+<!-- The goal of this repo is to provide a template and folder structure for submitting your assignment via `Github`. You have to create a Markdown file in the directory and push to your repo. How well you utilise `Github` as part of your workflow will form part of the assessment.  -->
+
+The answers included in pdf file deeply explain the questions for the two study: survival time of patients that have a particular type of liver operation as part of their treatment and fuel efficiency of a new car engine. 
+
+Rmarkdown file could be transform to pdf file.
+
+Both Rmarkdown and pdf file are updated to `Github` using commit and push. 
+
+The answers for all the assignment questions are 24 pages long in total. 

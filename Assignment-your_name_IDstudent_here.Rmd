@@ -1,0 +1,371 @@
+---
+title: "**Assignment Dinh Nghi Dung Le 46150641**"
+geometry: margin=2cm
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+surg=read.table("surg.dat",header=TRUE)
+kml=read.table("kml.dat",header=TRUE)
+```
+
+## Question 1
+
+```{r chunk1}
+surg$Blood = surg$blood # Add copy of column blood
+surg$blood = surg$survival # Swap column survival to blood
+colnames(surg)[1] = "Survival" # Rename column
+surg$blood <- NULL # Remove one of the blood column
+surg$survival <- NULL # Remove one of the survival column
+newNames = c("Survival","Prognosis","Enzyme","Liver","Age","Gender","Blood")
+colnames(surg) = newNames # Change column name
+```
+
+### a) Checking scatter plot matrix
+
+```{r chunk2}
+mycols = c("blue","red")[as.factor(surg$Gender)] # Put color for gender factor 
+levels(as.factor(surg$Gender)) # Checking level of gender, so we have blue=F and red=M
+```
+```{r chunk3, echo=FALSE}
+pairs(surg[,-6], panel = panel.smooth, col = mycols) # Scatterplot with smoother, plot data without gender
+```
+
+Gender variable need to be removed because it is a categorical variable. Gender is not a continuous variable. It is an independent variable and has no strength to affect dependent variable. 
+
+Since the correlation matrix is numeric summary, the categorical variable should be removed for the correlation matrix computation.
+
+Scatter plot comment: Survival is correlated with Prognosis, Enzyme, Liver, Age and Blood but every single predictor has correlation with other predictors. There is no abnormal observations. The scatterplot spreads similarly.
+
+### b) Compute the correlation matrix
+
+```{r chunk4}
+cor(surg[,-6]) #Compute correlation matrix without gender variable
+```
+
+The diagonals are 1.0000 and every single variable perfectly correlated with itself, off diagonals values include correlations among different variables. The matrix shows high level of correlation between predictors that indicate multi-collinearity.
+
+### c) Fit model to explain relationship between the response Survival and other predictors
+
+### Mathematical multiple regression model
+
+$$
+Y = \beta_0 + x_1\beta_1 + x_2\beta_2+ x_3\beta_3 + x_4\beta_4+ x_5\beta_5 +x_6\beta_6+ \varepsilon
+$$
+
+The response Y: dependent variable (Survival variable)
+
+$\beta_0$: intercept
+
+$x_1$: the first independent variable (Prognosis variable)
+
+$x_2$: the  second independent variable (Enzyme variable)
+
+$x_3$: the third independent variable (Liver variable)
+
+$x_4$: the fourth independent variable (Age variable)
+
+$x_5$: the fifth independent variable (Gender variable) 
+
+$x_6$: the sixth independent variable (Blood variable) 
+
+**Intercept:**
+
+$$
+b_0 = \bar{y} - \bar{x_1}b_1 - \bar{x_2}b_2 - ... - \bar{x_6}b_6
+$$
+
+### Mathematical model for the overall ANOVA
+
+$$
+\sum_{i = 1}^{n}{(Y_i - \bar{Y})^2} = \sum_{i = 1}^{n}{(\hat{Y_i} - \bar{Y})^2} + \sum_{i = 1}^{n}{(Y_i - \hat{Y})^2}
+$$
+
+### Hypotheses for Overall ANOVA
+
+H0 : $\beta_{Prognosis} = \beta_{Enzyme} =\beta_{Liver}=\beta_{Age}=\beta_{Gender}=\beta_{Blood}= 0$; 
+
+H1 : $\beta_i\not=0$ for at least one i (not all $\beta_i$ parameters are zero)
+
+### Overall ANOVA table for Multiple Regression
+
+```{r chunk5}
+surg.lm=lm(Survival ~ Prognosis + Enzyme + Liver + Age + Gender + Blood, data=surg)
+summary(surg.lm)
+anova(surg.lm)
+```
+
+Full RegSS = 1479767 + 2896818 + 885709 + 3027 +  11906 + 539487 = 5816714.
+
+RegM.S = $\frac{Reg.S.S}{k}$ = $\frac{5816714}{6}$ = 969452.3. 
+
+**H0:** $\beta_{Prognosis} = \beta_{Enzyme} = \beta_{Liver} =\beta_{Age} = \beta_{Gender} = \beta_{Blood}= 0$; 
+
+**H1:** $\beta_i\not=0$ for at least one i (not all $\beta_i$ parameters are zero). 
+
+**Test statistic:** $F_{obs} = \frac{Reg.M.S}{Res.M.S} = \frac{969452.3}{54315} = 17.8487$. 
+
+**P-value** = P($F_{6,47} \ge 17.8487$) = 1.190228e-10 < 0.01. 
+
+Reject H0 at 5% significant level. There is significant linear relationship between Survival response and at least one of the six predictors.
+
+### d) The most suitable regression model for the data
+
+### Diagnostic check
+ 
+```{r chunks20, echo=FALSE}
+mycols = c("blue","red")[as.factor(surg$Gender)]
+par(mfrow = c(1, 2))
+plot(surg.lm, which = 1:2, col=mycols)
+plot(resid(surg.lm) ~ Prognosis + Enzyme + Liver + Age + Blood, data=surg, col=mycols)
+```
+
+Normal Quantile-Quantile plot of residuals has concave up shape, which indicates skewness. The residuals vs fitted plot shows curvature. There might be slight curvature evidence in residuals vs liver function Index that motivate a multiplicative model. It is shown that log transformation is necessary in this situation because of data skewness and curvature.
+
+### Full multiple regression model starts with all predictors
+
+```{r chunk21}
+surg.1 = lm(Survival ~ ., data = surg)
+summary(surg.1)
+```
+
+Predictor Gender has the largest P-value (P-value = 0.997413). Drop Gender predictor.
+
+### Reduced model after dropping Gender
+
+```{r chunk22}
+surg.2 = lm(Survival ~ Prognosis + Enzyme + Liver + Age + Blood, data = surg)
+summary(surg.2)
+```
+
+Predictor Liver has the largest P-value (P-value = 0.437595). Drop Liver predictor.
+
+### Reduced model after dropping Liver
+
+```{r chunk23}
+surg.3 = lm(Survival ~ Prognosis + Enzyme + Age + Blood, data = surg)
+summary(surg.3)
+```
+
+Predictor Age has the largest P-value (P-value = 0.298). Drop Age predictor.
+
+### Final model after dropping Gender, Liver and Age
+
+```{r chunk24}
+surg.4 = lm(Survival ~ Prognosis + Enzyme + Blood, data = surg)
+summary(surg.4)
+```
+
+The most appropriate multiple regression model is the reduced model after dropping insignificant predictors such as Gender, Liver and Age. At this stage, remaining predictors are all significant and need to be remained in the model.
+
+### e) Validate Final Model and explanation for inappropriate multiple regression model
+
+The final model is the reduced model after dropping three insignificant predictors such as Gender, Liver and Age. 
+
+### Check Diagnostics
+
+```{r chunk25, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(surg.4, which = 1:2, col = mycols)
+```
+
+### Check residuals against predictors
+
+```{r chunk26, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(surg$Prognosis, residuals(surg.4), col = mycols)
+plot(surg$Enzyme, residuals(surg.4), col = mycols)
+plot(surg$Blood, residuals(surg.4), col = mycols)
+```
+
+As can be seen in the plots after applying the final multiple regression model, the Normal Quantile-Quantile plot of residuals still has concave up shape, which indicates skewness. The residuals vs fitted plot shows curvature. It is shown that log transformation is necessary in this situation because the data still shows skewness and curvature. Additionally, when using multiple regression model, it is shown that intercept is negative. It means that the expected number on Survival response will be less than 0 when other predictors will be set to 0. Therefore, it is inappropriate to apply multiple regression model to this study.
+
+### f) Re-fit the model using transformation
+
+### Log transform start with all predictors
+
+```{r chunk31}
+surg.5 = lm( log(Survival) ~ Prognosis + Enzyme + Liver + Age + Gender + Blood, data = surg)
+summary(surg.5)
+```
+
+Predictor Liver has the largest P-value (P-value = 0.95503). Drop Liver Predictor.
+
+```{r chunk27, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(surg.5, which = 1:2, col=mycols)
+plot(resid(surg.5) ~ Prognosis + Enzyme + Liver + Age  + Blood, data = surg, col=mycols)
+```
+
+The normal quantile-quantile plot of residuals is more linear, which closer meets the requirements of the model. There is slight curvature in the residual versus Liver and Age predictors. It is possible to use quadratic term. In both the original model and log transformed model, Liver, Gender and Age is insignificant values and need to be dropped.
+
+### Remove Liver predictor
+
+```{r chunk28}
+surg.6 = update(surg.5, . ~ . - Liver)
+summary(surg.6)
+```
+
+Predictor Gender has the largest P-value (P-value = 0.347). Drop Gender Predictor.
+
+### Remove Gender predictor
+
+```{r chunk29}
+surg.7 = update(surg.6, . ~ . - Gender)
+summary(surg.7)
+```
+
+Predictor Age has the largest P-value (P-value = 0.123). Drop Age Predictor.
+
+### Remove Age predictor
+
+```{r chunk32}
+surg.8 = update(surg.7, . ~ . - Age)
+summary(surg.8)
+```
+
+At this stage, remaining predictors are all significant and need to be remained in the model.
+
+### g) Validate final model with log(survival) response
+
+```{r chunk30, echo=FALSE}
+par(mfrow = c(1, 2))
+plot(surg.8, which = 1:2, col = mycols)
+plot(resid(surg.8) ~ Prognosis + Enzyme + Blood, data = surg, col = mycols)
+```
+
+The normal quantile-quantile plot of residuals is linear and show no skewness which meets the model requirements. There is no curvature in the residual versus all the predictors.
+
+The regression model with log(survival) response is more appropriate than the regression model with original data. Because log transformation follows linear regression framework, reduce skewness of the data and its inferences would be reliably used.
+
+## Question 2
+
+### a) Explain the design study
+```{r chunk6}
+with(kml,table(driver,car)) # Check the number of pairs
+```
+
+The design of the study is balanced. Because there are equal number of observations in all cells and for all possible pairs of factor levels for factor driver (labeled A, B, C and D) and car (labeled one, two, three, four and five).
+
+### b) Preliminary investigation
+
+### Interaction plot
+
+```{r chunk7, echo=FALSE}
+with(kml, interaction.plot(driver, car, kmL, 
+                           trace.label = "Specific Car",
+                           xlab = "Driver", 
+                           ylab = "Efficiency of car in km/L",col = 1:3))
+
+with(kml, interaction.plot(car, driver, kmL, 
+                           trace.label = "Driver",
+                           xlab = "Specific Car", 
+                           ylab = "Efficiency of car in km/L", col = 1:3))
+```
+
+The lines are parallel, so there is no interaction between Factor driver and Factor car. Factor car has a constant effect on the efficiency of car in km/L (which is irrespective of Factor driver)
+
+### Boxplot
+
+```{r chunk8, echo=FALSE}
+boxplot(kmL ~ driver + car, data = kml, main="Efficiency of car in km/L")
+```
+
+The boxplot contains huge number of cells which is difficult to interpret.
+
+### c) Balanced Design Test
+
+**Model:**
+
+$$Y_{ijk} = \mu + \alpha_i + \beta_j + \gamma_{ij} + \varepsilon_{ij}$$
+
+There are 3 test types
+
+**1. Interaction test**
+
+**H0:**  $\gamma_{ij} = 0$ for all i, j;  **HA:**  not all $\gamma_{ij} = 0$
+
+**2. Main effect Driver**
+
+**H0:**  $\alpha_i = 0$ for all i;  **HA:**  not all $\alpha_i=0$
+
+**3. Main effect Car** 
+
+**H0:**  $\beta_j = 0$ for all j;  **HA:**  not all $\beta_j=0$
+
+### Fit full model with interaction
+
+```{r chunk9}
+kml.1 = lm(kmL ~ car * driver, data = kml)
+summary(kml.1)$coefficients
+```
+
+F-test for interaction term, ANOVA table for the full model
+
+```{r chunk10}
+anova(kml.1)
+```
+
+**Model:** 
+
+$$Y = \mu + \alpha_i + \beta_j + \gamma_{ij} + \varepsilon$$
+**Hypotheses:** 
+
+**H0:** $\gamma_{ij} = 0$; 
+
+**H1:** at least one $\gamma_{ij}\not=0$. 
+
+**P-Value** = 0.3715 > 0.05. 
+
+The interaction is not significant. Therefore, reduced model with main effects only need to be fit
+
+### Fit reduced model without interaction (only main effects)
+
+```{r chunk11}
+kml.2 = update(kml.1, . ~ . - car:driver)
+anova(kml.2)
+```
+
+**Main Effects: Driver**
+
+**Model:**  $Y = \mu + \alpha_i + \beta_j + \varepsilon$. 
+
+**Hypotheses:**
+
+**H0:**  $\beta_j = 0$; 
+
+**H1:**  at least one $\beta_j \not=0$. P-Value = 2.2e-16 < 0.05. 
+
+Driver type is significant
+
+
+**Main Effects: Car**
+
+**Model:**  $Y = \mu + \alpha_i + \beta_j + \varepsilon$.
+
+**Hypotheses:**
+
+**H0:**  $\alpha_i = 0$; 
+
+**H1:**  at least one $\alpha_i\not=0$. 
+
+**P-Value** = 2.2e-16 < 0.05. 
+
+Car type is significant
+
+### Checking Assumptions
+
+```{r chunk12, echo=FALSE}
+plot(kml.2, which = 1:2)
+kml.aov = aov(kmL ~ car * driver, data = kml)
+plot(kml.aov, which = 1:2) 
+```
+
+No curvature in the normal quantile plot of residuals. The points is scattered evenly above and below the line.
+
+### d) Conclusion 
+
+For the fit model with interaction, since the result of p-value is insignificant, so the effect of factor Driver on the efficiency of the car in km/L is independent of factor Car and there is no interaction between the two factors.
+
+For the fit model with main effects, since the p-value for both factor Driver and Car are significant, so at least one population mean of the efficiency of the car in km/L is different from others for all levels of factor Driver and factor Car.
